@@ -35,11 +35,13 @@
 .def    secDigit = R20
 .def    msecDigit1 = R21
 .def    msecDigit2 = R22
-.def    scoreTrack = R23
+.def    msecDigit3 = R23
+.def    scoreTrack = R24
 
 .org $0000
 	jmp RESET
-
+.org $0016
+ 	jmp MsecOVFT0
 
 
 RESET:
@@ -62,6 +64,8 @@ out     DDRA, temp
 clr     temp
 clr     temp4
 ldi     secDigit, $F0   
+
+;Main Subroutines between actual timing.
 
 StartScreen:
     inc     temp
@@ -191,7 +195,7 @@ DisplayTurn:
     cpse    temp4, secDigit
     rcall   DisplayTurn
     clr     temp4
-    rjmp    MainLoop
+    rjmp    RedLightDrive
 
 DisplayP2:
     inc     temp4
@@ -210,11 +214,39 @@ DisplayP2:
     clr     temp4
     rjmp    DisplayTurn
 
+RedLightDrive:
+    ldi     temp, LightSequance1
+    out     PORTD, temp
+    rcall   Long_Delay
+    rcall   Long_Delay
+    rcall   Long_Delay
+    ldi     temp, LightSequance2
+    out     PORTD, temp
+    rcall   Long_Delay
+    rcall   Long_Delay
+    rcall   Long_Delay
+    ldi     temp, LightSequance3
+    out     PORTD, temp
+    rcall   Long_Delay
+    rcall   Long_Delay
+    rcall   Long_Delay
+    ldi     temp, LightSequance4
+    out     PORTD, temp
+    rcall   Long_Delay
+    rcall   Long_Delay
+    rcall   Long_Delay
+    ldi     temp, $00
+    out     PORTD, temp
+    rcall   DiffDelay
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;   MAIN PART   ;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 MainLoop:
+    
+
+
 
 
 
@@ -229,8 +261,15 @@ Wait:	subi    temp2, 1
 	    ret
 
 Long_Delay:	ldi     temp2, $00
-	    ldi     temp3, $AA
+	    ldi     temp3, $FF
 WaitL:	subi    temp2, 1
 	    sbci    temp3, 0
 	    brcc    WaitL
 	    ret
+
+MsecOVFT0:
+    push    temp
+    in      temp,SREG
+    push    temp
+
+    rcall   
