@@ -15,8 +15,9 @@
 .equ    num2= 0x5B
 .equ    num1= 0x06
 .equ    num0= 0x3F
-.equ    letterP = 0x73
+
 .equ    letterF = 0x71
+.equ    letterP = 0x73
 .equ    letterT = 0x78
 .equ    letterU = 0x1C
 .equ    letterR = 0x50
@@ -37,11 +38,14 @@
 .def    msecDigit2 = R22
 .def    msecDigit3 = R23
 .def    scoreTrack = R24
+.def    turnTrack = R25
 
 .org $0000
 	jmp RESET
-.org $0016
- 	jmp MsecOVFT0
+.org %006
+    jmp StopTimerInt
+.org $0014
+ 	jmp MsecT0Int
 
 
 RESET:
@@ -63,7 +67,8 @@ out     DDRC, temp ; SEVSEG o/p
 out     DDRA, temp
 clr     temp
 clr     temp4
-ldi     secDigit, $F0   
+ldi     secDigit, $F0 ;For start screen delay
+ldi     turnTrack, $01   
 
 ;Main Subroutines between actual timing.
 
@@ -171,7 +176,7 @@ DisplayP1:
     rjmp    DisplayP1
     clr     temp4
 
-DisplayTurn:
+DisplayTurn:            ;print out 'turn' text to sevseg
     inc     temp4
     ldi     temp, (1<<3)
     out     PORTA, temp
@@ -210,7 +215,7 @@ DisplayP2:
     out     PORTC, temp
     rcall   Delay
     cpse    temp4, secDigit
-    rjmp    DisplayP1
+    rjmp    DisplayP2
     clr     temp4
     rjmp    DisplayTurn
 
@@ -232,23 +237,20 @@ RedLightDrive:
     rcall   Long_Delay
     ldi     temp, LightSequance4
     out     PORTD, temp
-    rcall   Long_Delay
-    rcall   Long_Delay
-    rcall   Long_Delay
+    rcall   DiffDelay
     ldi     temp, $00
     out     PORTD, temp
-    rcall   DiffDelay
+
+    sei 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;   MAIN PART   ;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 MainLoop:
-    
+    rcall   SevSegDrive
 
-
-
-
+    rjmp MainLoop
 
 
 
@@ -261,15 +263,236 @@ Wait:	subi    temp2, 1
 	    ret
 
 Long_Delay:	ldi     temp2, $00
-	    ldi     temp3, $FF
-WaitL:	subi    temp2, 1
-	    sbci    temp3, 0
-	    brcc    WaitL
-	    ret
+	        ldi     temp3, $FF
+WaitL:	    subi    temp2, 1
+	        sbci    temp3, 0
+	        brcc    WaitL
+	        ret
+CheckTurn:
+    cpi     turnTrack, $01
+    breq    ChangeTurn
+    ret
 
-MsecOVFT0:
+ChangeTurn:
+    ldi     turnTrack, $02
+    rjmp    DisplayP2           ;maybe just 'jmp'??
+
+SevSegDrive:
+    ldi     temp, $00
+    out     PORTA, temp
+    rcall   DriveMsec3
+    ldi     temp, $01
+    out     PORTA, temp
+    rcall   DriveMsec2
+    ldi     temp, $02
+    out     PORTA, temp
+    rcall   DriveMsec1
+    ldi     temp, $03
+    out     PORTA, temp
+    rcall   DriveSec
+    ret
+
+DriveMsec3:
+    rcall  DisplayMsec3
+    rcall   Delay
+    ret
+DriveMsec2:
+    rcall  DisplayMsec2
+    rcall   Delay
+    ret
+DriveMsec1:
+    rcall  DisplayMsec1
+    rcall   Delay
+    ret
+DriveSec:
+    rcall  DisplaySec
+    rcall   Delay
+    ret
+
+DisplayMsec3:
+    cpi     msecDigit3, $09
+    breq    showNine
+    cpi     msecDigit3, $08
+    breq    showEight
+    cpi     msecDigit3, $07
+    breq    showSeven
+    cpi     msecDigit3, $06
+    breq    showSix
+    cpi     msecDigit3, $05
+    breq    showFive 
+    cpi     msecDigit3, $04
+    breq    showFour 
+    cpi     msecDigit3, $03
+    breq    showThree
+    cpi     msecDigit3, $02
+    breq    showTwo
+    cpi     msecDigit3, $01
+    breq    showOne
+    cpi     msecDigit3, $00
+    breq    showZero
+    ret 
+DisplayMsec2:
+    cpi     msecDigit2, $09
+    breq    showNine
+    cpi     msecDigit2, $08
+    breq    showEight
+    cpi     msecDigit2, $07
+    breq    showSeven
+    cpi     msecDigit2, $06
+    breq    showSix
+    cpi     msecDigit2, $05
+    breq    showFive 
+    cpi     msecDigit2, $04
+    breq    showFour 
+    cpi     msecDigit2, $03
+    breq    showThree
+    cpi     msecDigit2, $02
+    breq    showTwo
+    cpi     msecDigit2, $01
+    breq    showOne
+    cpi     msecDigit2, $00
+    breq    showZero
+    ret 
+
+showNine:
+    ldi     temp, num9
+    out     PORTC, temp
+    ret
+showEight:
+    ldi     temp, num8
+    out     PORTC, temp
+    ret
+showSeven:
+    ldi     temp, num7
+    out     PORTC, temp
+    ret
+showSix:
+    ldi     temp, num6
+    out     PORTC, temp
+    ret
+showFive:
+    ldi     temp, num5
+    out     PORTC, temp
+    ret
+showFour:
+    ldi     temp, num4
+    out     PORTC, temp
+    ret
+showThree:
+    ldi     temp, num3
+    out     PORTC, temp
+    ret
+showTwo:
+    ldi     temp, num2
+    out     PORTC, temp
+    ret
+showOne:
+    ldi     temp, num1
+    out     PORTC, temp
+    ret
+showZero:
+    ldi     temp, num0
+    out     PORTC, temp
+    ret
+
+DisplayMsec1:
+    cpi     msecDigit1, $09
+    breq    showNine
+    cpi     msecDigit1, $08
+    breq    showEight
+    cpi     msecDigit1, $07
+    breq    showSeven
+    cpi     msecDigit1, $06
+    breq    showSix
+    cpi     msecDigit1, $05
+    breq    showFive 
+    cpi     msecDigit1, $04
+    breq    showFour 
+    cpi     msecDigit1, $03
+    breq    showThree
+    cpi     msecDigit1, $02
+    breq    showTwo
+    cpi     msecDigit1, $01
+    breq    showOne
+    cpi     msecDigit1, $00
+    breq    showZero
+    ret
+DriveSec:
+    cpi     secDigit, $09
+    breq    showNine
+    cpi     secDigit, $08
+    breq    showEight
+    cpi     secDigit, $07
+    breq    showSeven
+    cpi     secDigit, $06
+    breq    showSix
+    cpi     secDigit, $05
+    breq    showFive 
+    cpi     secDigit, $04
+    breq    showFour 
+    cpi     secDigit, $03
+    breq    showThree
+    cpi     secDigit, $02
+    breq    showTwo
+    cpi     secDigit, $01
+    breq    showOne
+    cpi     secDigit, $00
+    breq    showZero
+    ret
+
+
+StopTimer:
+    ;;;;;
+
+StopTimerInt:
     push    temp
     in      temp,SREG
     push    temp
 
-    rcall   
+    rcall StopTimer 
+
+    pop     temp
+    out     SREG, temp
+    pop     temp
+    reti
+
+
+MsecT0Int:
+    push    temp
+    in      temp,SREG
+    push    temp
+
+    rcall TimerDrive   
+
+    pop     temp
+    out     SREG, temp
+    pop     temp
+    reti
+
+TimerDrive:
+    inc     msecDigit3
+    cpi     msecDigit3, $10
+    brsh    OverMsec3
+    ret
+
+OverMsec3:
+    subi    msecDigit3, $0A
+    inc     msecDigit2
+    cpi     msecDigit2, $10
+    brsh    OverMsec2
+    ret
+
+OverMsec2:
+    subi    msecDigit2, $0A
+    inc     msecDigit1
+    cpi     msecDigit1, $10
+    brsh    OverMsec1
+    ret
+
+OverMsec1:
+    subi    msecDigit1, $0A
+    inc     secDigit
+    cpi     secDigit, $9
+    brsh    StopTimer
+    ret
+
