@@ -39,12 +39,12 @@
 .def    msecDigit3 = R23
 .def    scoreTrack = R24
 .def    turnTrack = R25
-.def    displayCountLow = R26
-.def    displayCountHigh = R27
+.def    displayCountLow = R28
+.def    displayCountHigh = R29
 
 .org $0000 
 	jmp RESET
-.org %006
+.org $006
     jmp StopTimerInt
 .org $0014
  	jmp MsecT0Int
@@ -73,12 +73,7 @@ clr     displayCountLow
 clr     displayCountHigh
 ldi     secDigit, $FF ;For start screen delay
 ldi     turnTrack, $01   
-
-ldi temp, 1<<INT2
-out GICR, temp ; INT2 activation
-; INITIALIZE MCUCSR
-ldi temp, 1<<ISC2
-out MCUCSR, temp ; Rising edge act.
+ldi		scoreTrack, $01
 
 clr     temp
 
@@ -99,6 +94,7 @@ StartScreen:
     cpse    temp, secDigit
     rjmp    StartScreen
     clr     temp  
+	clr		secDigit
 	rjmp	ShowP1Points
 
 ScoreTransform:
@@ -139,13 +135,15 @@ ShowP1Points:
     rcall   Delay
     ldi     temp, (1<<0)
     out     PORTA, temp
+	clr		temp
     mov     temp, scoreTrack
     andi    temp, $03
     rcall   ScoreTransform
     out     PORTC, temp
     rcall   Delay
-    cpse    temp4, secDigit
+    sbrs    temp4, 7
     rjmp    ShowP1Points
+
     clr     temp4
 
 ShowP2Points:   
@@ -168,8 +166,9 @@ ShowP2Points:
     rcall   ScoreTransform
     out     PORTC, temp
     rcall   Delay
-    cpse    temp4, secDigit
+    sbrs    temp4, 7
     rjmp    ShowP2Points
+
     clr     temp4
 
 DisplayP1:  
@@ -184,8 +183,10 @@ DisplayP1:
     ldi     temp, num1
     out     PORTC, temp
     rcall   Delay
-    cpse    temp4, secDigit
+    sbrs    temp4, 7
     rjmp    DisplayP1
+	ldi		turnTrack, $01
+
     clr     temp4
 
 DisplayTurn:            ;print out 'turn' text to sevseg
@@ -199,6 +200,7 @@ DisplayTurn:            ;print out 'turn' text to sevseg
     out     PORTA, temp
     ldi     temp, letterU
     out     PORTC, temp
+	rcall	Delay
     ldi     temp, (1<<1)
     out     PORTA, temp
     ldi     temp, letterR
@@ -209,10 +211,11 @@ DisplayTurn:            ;print out 'turn' text to sevseg
     ldi     temp, letterN
     out     PORTC, temp
     rcall   Delay
-    cpse    temp4, secDigit
-    rcall   DisplayTurn
+    sbrs    temp4, 7
+    rjmp	DisplayTurn
+
     clr     temp4
-    rjmp    RedLightDrive
+    rjmp     RedLightDrive
 
 DisplayP2:
     inc     temp4
@@ -226,8 +229,9 @@ DisplayP2:
     ldi     temp, num2
     out     PORTC, temp
     rcall   Delay
-    cpse    temp4, secDigit
+    sbrs    temp4, 7
     rjmp    DisplayP2
+
     clr     temp4
     rjmp    DisplayTurn
 
@@ -252,8 +256,28 @@ RedLightDrive:
     rcall   Long_Delay5
     ldi     temp, $00
     out     PORTD, temp
+	rcall	InitInterrupts
+	sei
+	rjmp	MainLoop
 
-    sei 
+InitInterrupts:
+	
+	; INITIALIZE Timer0 CTC interrupt
+	ldi temp, (1<<WGM01)|(1<<CS01)|(1<<CS00);|(1<<COM00)
+	out TCCR0, temp
+	ldi temp, $0E
+	out OCR0, temp
+	ldi temp, 1<<OCIE0
+	out TIMSK, temp
+
+	ldi temp, 1<<INT2
+	out GICR, temp ; INT2 activation
+	; INITIALIZE MCUCSR
+	ldi temp, 1<<ISC2
+	out MCUCSR, temp ; Rising edge act.
+	ret
+	
+	 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;   MAIN PART   ;;;;;
@@ -261,8 +285,9 @@ RedLightDrive:
 
 MainLoop:
     rcall   SevSegDrive
-    cpi     temp4, $AA      ;to check if showing timer result phase is started
-    breq    ShowResultTime
+	rcall	CheckForTurn
+    
+
     rjmp    MainLoop
 
 
@@ -291,6 +316,7 @@ Long_Delay5:
 
 CheckTurn:
     clr     temp4
+	clr		displayCountHigh
     cpi     turnTrack, $01
     breq    ChangeTurn
     rcall   CalcRoundWin
@@ -298,39 +324,44 @@ CheckTurn:
 
 ChangeTurn:
     ldi     turnTrack, $02
-    push    secDigit
-    push    msecDigit1
-    push    msecDigit2
-    push    msecDigit3
+    ;push    secDigit
+    ;push    msecDigit1
+    ;push    msecDigit2
+    ;push    msecDigit3
     rjmp    DisplayP2           ;maybe just 'jmp'??
 
 CalcRoundWin:
-    pop     temp                ;secDigit of P1
-    cp      temp, secDigit
-    brsh    
-
+    ;pop     temp                ;secDigit of P1
+    ;cp      temp, secDigit
+    ;brsh    
+	ret
+CheckForTurn:
+	cpi     temp4, $AA      ;to check if showing timer result phase is started
+    breq    ShowResultTime
+	ret
 
 ShowResultTime:
+	cli
     inc     displayCountLow
-    brcs    IncreaseHighNibble
+    sbrs    displayCountLow, 7
     ret
 IncreaseHighNibble:
     inc     displayCountHigh
-    sbrc    displayCountHigh, 6
+    sbrc    displayCountHigh, 7
     rjmp    CheckTurn
     ret
 
 SevSegDrive:
-    ldi     temp, $00
+    ldi     temp, (1<<0)
     out     PORTA, temp
     rcall   DriveMsec3
-    ldi     temp, $01
+    ldi     temp, (1<<1)
     out     PORTA, temp
     rcall   DriveMsec2
-    ldi     temp, $02
+    ldi     temp, (1<<2)
     out     PORTA, temp
     rcall   DriveMsec1
-    ldi     temp, $03
+    ldi     temp, (1<<3)
     out     PORTA, temp
     rcall   DriveSec
     ret
@@ -345,7 +376,7 @@ DriveMsec2:
     ret
 DriveMsec1:
     rcall  DisplayMsec1
-    rcall  Delay
+    rcall  Delay	
     ret
 DriveSec:
     rcall  DisplaySec
@@ -486,6 +517,7 @@ DisplaySec:
 
 StopTimer:      ;stop timer and start the timer result display phase
     ;;;;;
+	
     ldi     temp4, $AA
     ret
 
@@ -516,28 +548,28 @@ MsecT0Int:
 
 TimerDrive:
     inc     msecDigit3
-    cpi     msecDigit3, $10
+    cpi     msecDigit3, $0A
     brsh    OverMsec3
     ret
 
 OverMsec3:
-    subi    msecDigit3, $0A
+    clr		msecDigit3
     inc     msecDigit2
-    cpi     msecDigit2, $10
+    cpi     msecDigit2, $0A
     brsh    OverMsec2
     ret
 
 OverMsec2:
-    subi    msecDigit2, $0A
+    clr		msecDigit2
     inc     msecDigit1
-    cpi     msecDigit1, $10
+    cpi     msecDigit1, $0A
     brsh    OverMsec1
     ret
 
 OverMsec1:
     subi    msecDigit1, $0A
     inc     secDigit
-    cpi     secDigit, $9
+    cpi     secDigit, $09
     brsh    StopTimer
     ret
 
