@@ -39,8 +39,10 @@
 .def    msecDigit3 = R23
 .def    scoreTrack = R24
 .def    turnTrack = R25
+.def    displayCountLow = R26
+.def    displayCountHigh = R27
 
-.org $0000
+.org $0000 
 	jmp RESET
 .org %006
     jmp StopTimerInt
@@ -67,7 +69,9 @@ out     DDRC, temp ; SEVSEG o/p
 out     DDRA, temp
 clr     temp
 clr     temp4
-ldi     secDigit, $F0 ;For start screen delay
+clr     displayCountLow
+clr     displayCountHigh
+ldi     secDigit, $FF ;For start screen delay
 ldi     turnTrack, $01   
 
 ;Main Subroutines between actual timing.
@@ -249,8 +253,9 @@ RedLightDrive:
 
 MainLoop:
     rcall   SevSegDrive
-
-    rjmp MainLoop
+    cpi     temp4, $AA      ;to check if showing timer result phase is started
+    breq    ShowResultTime
+    rjmp    MainLoop
 
 
 
@@ -268,14 +273,44 @@ WaitL:	    subi    temp2, 1
 	        sbci    temp3, 0
 	        brcc    WaitL
 	        ret
+Long_Delay5:
+    rcall   Long_Delay
+    rcall   Long_Delay
+    rcall   Long_Delay
+    rcall   Long_Delay
+    rcall   Long_Delay
+    ret
+
 CheckTurn:
+    clr     temp4
     cpi     turnTrack, $01
     breq    ChangeTurn
-    ret
+    rcall   CalcRoundWin
+    rjmp    ShowP1Points
 
 ChangeTurn:
     ldi     turnTrack, $02
+    push    secDigit
+    push    msecDigit1
+    push    msecDigit2
+    push    msecDigit3
     rjmp    DisplayP2           ;maybe just 'jmp'??
+
+CalcRoundWin:
+    pop     temp                ;secDigit of P1
+    cp      temp, secDigit
+    brsh    
+
+
+ShowResultTime:
+    inc     displayCountLow
+    brcs    IncreaseHighNibble
+    ret
+IncreaseHighNibble:
+    inc     displayCountHigh
+    sbrc    displayCountHigh, 6
+    rjmp    CheckTurn
+    ret
 
 SevSegDrive:
     ldi     temp, $00
@@ -294,19 +329,19 @@ SevSegDrive:
 
 DriveMsec3:
     rcall  DisplayMsec3
-    rcall   Delay
+    rcall  Delay
     ret
 DriveMsec2:
     rcall  DisplayMsec2
-    rcall   Delay
+    rcall  Delay
     ret
 DriveMsec1:
     rcall  DisplayMsec1
-    rcall   Delay
+    rcall  Delay
     ret
 DriveSec:
     rcall  DisplaySec
-    rcall   Delay
+    rcall  Delay
     ret
 
 DisplayMsec3:
@@ -417,7 +452,7 @@ DisplayMsec1:
     cpi     msecDigit1, $00
     breq    showZero
     ret
-DriveSec:
+DisplaySec:
     cpi     secDigit, $09
     breq    showNine
     cpi     secDigit, $08
@@ -441,8 +476,10 @@ DriveSec:
     ret
 
 
-StopTimer:
+StopTimer:      ;stop timer and start the timer result display phase
     ;;;;;
+    ldi     temp4, $AA
+    ret
 
 StopTimerInt:
     push    temp
