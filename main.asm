@@ -74,6 +74,14 @@ clr     displayCountHigh
 ldi     secDigit, $FF ;For start screen delay
 ldi     turnTrack, $01   
 
+ldi temp, 1<<INT2
+out GICR, temp ; INT2 activation
+; INITIALIZE MCUCSR
+ldi temp, 1<<ISC2
+out MCUCSR, temp ; Rising edge act.
+
+clr     temp
+
 ;Main Subroutines between actual timing.
 
 StartScreen:
@@ -90,7 +98,7 @@ StartScreen:
     rcall   Delay
     cpse    temp, secDigit
     rjmp    StartScreen
-    ldi     secDigit, $C0  
+    clr     temp  
 	rjmp	ShowP1Points
 
 ScoreTransform:
@@ -241,7 +249,7 @@ RedLightDrive:
     rcall   Long_Delay
     ldi     temp, LightSequance4
     out     PORTD, temp
-    rcall   DiffDelay
+    rcall   Long_Delay5
     ldi     temp, $00
     out     PORTD, temp
 
