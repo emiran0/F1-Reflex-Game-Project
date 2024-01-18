@@ -39,8 +39,13 @@
 .def    msecDigit3 = R23
 .def    scoreTrack = R24
 .def    turnTrack = R25
-.def    displayCountLow = R28
-.def    displayCountHigh = R29
+.def    displayCountLow = R26
+.def    displayCountHigh = R27
+.def	p1SecHolder = R28
+.def	p1Msec1Holder = R29
+.def	p1Msec2Holder = R30
+.def	p1Msec3Holder = R31
+
 
 .org $0000 
 	jmp RESET
@@ -73,7 +78,7 @@ clr     displayCountLow
 clr     displayCountHigh
 ldi     secDigit, $FF ;For start screen delay
 ldi     turnTrack, $01   
-ldi		scoreTrack, $01
+ldi		scoreTrack, $00
 
 clr     temp
 
@@ -86,11 +91,13 @@ StartScreen:
     ldi     temp2, letterF
     out     PORTC, temp2
     rcall   Delay
+	rcall   Delay
     ldi     temp2, (1<<1)
     out     PORTA, temp2
     ldi     temp2, num1
     out     PORTC, temp2
     rcall   Delay
+	rcall   Delay
     cpse    temp, secDigit
     rjmp    StartScreen
     clr     temp  
@@ -120,6 +127,60 @@ ScoreToSevsegTwo:
 ScoreToSevsegThree:
     ldi     temp, num3
     ret
+
+BlinkP1Won:
+    ldi     temp, (1<<2)
+    out     PORTA, temp
+    ldi     temp, letterP
+    out     PORTC, temp
+    rcall   Delay
+	rcall   Delay
+    ldi     temp, (1<<1)
+    out     PORTA, temp
+    ldi     temp, num1
+    out     PORTC, temp
+    rcall   Delay
+	rcall   Delay
+	ldi		temp, $00
+	out		PORTA, temp
+	rcall	Long_Delay
+    rjmp    BlinkP1Won
+BlinkP2Won:
+    ldi     temp, (1<<2)
+    out     PORTA, temp
+    ldi     temp, letterP
+    out     PORTC, temp
+    rcall   Delay
+	rcall   Delay
+    ldi     temp, (1<<1)
+    out     PORTA, temp
+    ldi     temp, num2
+    out     PORTC, temp
+    rcall   Delay
+	rcall   Delay
+	ldi		temp, $00
+	out		PORTA, temp
+	rcall	Long_Delay
+    rjmp    BlinkP2Won
+
+CheckForFinish:
+	mov     temp, scoreTrack
+    andi    temp, $03
+	cpi		temp, $03
+	breq	P1Won
+	clr		temp
+	mov     temp, scoreTrack
+	swap	temp
+    andi    temp, $03
+	cpi		temp, $03
+	breq	P2Won
+	ret
+P1Won:
+	rjmp	BlinkP1Won
+P2Won:
+	rjmp	BlinkP2Won
+
+	
     
 ShowP1Points:
     inc     temp4
@@ -128,11 +189,13 @@ ShowP1Points:
     ldi     temp, letterP
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<2)
     out     PORTA, temp
     ldi     temp, num1
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<0)
     out     PORTA, temp
 	clr		temp
@@ -141,9 +204,13 @@ ShowP1Points:
     rcall   ScoreTransform
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     sbrs    temp4, 7
     rjmp    ShowP1Points
-
+	clr		p1secHolder
+	clr		p1Msec1Holder
+	clr		p1Msec2Holder
+	clr		p1Msec3Holder
     clr     temp4
 
 ShowP2Points:   
@@ -153,11 +220,13 @@ ShowP2Points:
     ldi     temp, letterP
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<2)
     out     PORTA, temp
     ldi     temp, num2
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<0)
     out     PORTA, temp
     mov     temp, scoreTrack
@@ -166,9 +235,10 @@ ShowP2Points:
     rcall   ScoreTransform
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     sbrs    temp4, 7
     rjmp    ShowP2Points
-
+	rcall	CheckForFinish
     clr     temp4
 
 DisplayP1:  
@@ -178,11 +248,13 @@ DisplayP1:
     ldi     temp, letterP
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<1)
     out     PORTA, temp
     ldi     temp, num1
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     sbrs    temp4, 7
     rjmp    DisplayP1
 	ldi		turnTrack, $01
@@ -196,21 +268,27 @@ DisplayTurn:            ;print out 'turn' text to sevseg
     ldi     temp, letterT
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<2)
     out     PORTA, temp
     ldi     temp, letterU
     out     PORTC, temp
 	rcall	Delay
+	rcall   Delay
     ldi     temp, (1<<1)
     out     PORTA, temp
     ldi     temp, letterR
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<0)
     out     PORTA, temp
     ldi     temp, letterN
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
+	ldi		temp, $00
+	out		PORTC, temp
     sbrs    temp4, 7
     rjmp	DisplayTurn
 
@@ -224,11 +302,13 @@ DisplayP2:
     ldi     temp, letterP
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     ldi     temp, (1<<1)
     out     PORTA, temp
     ldi     temp, num2
     out     PORTC, temp
     rcall   Delay
+	rcall   Delay
     sbrs    temp4, 7
     rjmp    DisplayP2
 
@@ -254,18 +334,24 @@ RedLightDrive:
     ldi     temp, LightSequance4
     out     PORTD, temp
     rcall   Long_Delay5
+	rcall	Long_Delay
     ldi     temp, $00
     out     PORTD, temp
 	rcall	InitInterrupts
+	clr		secDigit
+	clr		msecDigit1
+	clr		msecDigit2
+	clr		msecDigit3
+	clr		temp
 	sei
 	rjmp	MainLoop
 
 InitInterrupts:
 	
 	; INITIALIZE Timer0 CTC interrupt
-	ldi temp, (1<<WGM01)|(1<<CS01)|(1<<CS00);|(1<<COM00)
+	ldi temp, (1<<WGM01)|(1<<CS01)|(1<<CS00)		; prescale 64 and CTC mode
 	out TCCR0, temp
-	ldi temp, $0E
+	ldi temp, $0E		; to get 0.001 sec timer0 interrupt
 	out OCR0, temp
 	ldi temp, 1<<OCIE0
 	out TIMSK, temp
@@ -277,7 +363,7 @@ InitInterrupts:
 	out MCUCSR, temp ; Rising edge act.
 	ret
 	
-	 
+	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;   MAIN PART   ;;;;;
@@ -286,22 +372,22 @@ InitInterrupts:
 MainLoop:
     rcall   SevSegDrive
 	rcall	CheckForTurn
+	sbrc	displayCountHigh, 3
+	rcall	CheckTurn
     
-
     rjmp    MainLoop
-
 
 
 ;; Delay subroutine
 Delay:	ldi     temp2, $00
-	    ldi     temp3, $06
+	    ldi     temp3, $02
 Wait:	subi    temp2, 1
 	    sbci    temp3, 0
 	    brcc    Wait
 	    ret
 
 Long_Delay:	ldi     temp2, $00
-	        ldi     temp3, $FF
+	        ldi     temp3, $DD
 WaitL:	    subi    temp2, 1
 	        sbci    temp3, 0
 	        brcc    WaitL
@@ -317,38 +403,121 @@ Long_Delay5:
 CheckTurn:
     clr     temp4
 	clr		displayCountHigh
-    cpi     turnTrack, $01
-    breq    ChangeTurn
-    rcall   CalcRoundWin
-    rjmp    ShowP1Points
+	ldi		temp, $01
+    cpse    turnTrack, temp
+	rcall   CalcRoundWinSec
+    rcall   ChangeTurn
+    ret
 
 ChangeTurn:
-    ldi     turnTrack, $02
-    ;push    secDigit
-    ;push    msecDigit1
-    ;push    msecDigit2
-    ;push    msecDigit3
-    rjmp    DisplayP2           ;maybe just 'jmp'??
+    ldi     turnTrack, $0F
+	mov		p1SecHolder, secDigit
+	mov		p1Msec1Holder, msecDigit1
+	mov		p1Msec2Holder, msecDigit2
+	mov		p1Msec3Holder, msecDigit3
+    rjmp    DisplayP2           
 
-CalcRoundWin:
-    ;pop     temp                ;secDigit of P1
-    ;cp      temp, secDigit
-    ;brsh    
+AddPointsToP2Sec:
+	ldi		temp, $10
+	add		scoreTrack, temp
+	rjmp	ShowP1Points
+AddPointsToP1Sec:
+	ldi		temp, $01
+	add		scoreTrack, temp
+	rjmp	ShowP1Points 
+CalcRoundWinSec:               ;secDigit of P1
+    cp      secDigit, p1SecHolder
+    brsh    CheckP1WinSec
+	cp		secDigit, p1SecHolder
+	brlo	AddPointsToP2Sec	;;
 	ret
+CheckP1WinSec:
+	cp		secDigit, p1SecHolder
+	breq	CalcP1WinMsec1
+	cp		secDigit, p1SecHolder
+	brne	AddPointsToP1Sec	;;
+	ret
+AddPointsToP2Msec1:
+	ldi		temp, $10
+	add		scoreTrack, temp
+	rjmp	ShowP1Points
+AddPointsToP1Msec1:
+	ldi		temp, $01
+	add		scoreTrack, temp
+	rjmp	ShowP1Points 
+CalcP1WinMsec1:				;msecDigit1
+	cp		msecDigit1, p1Msec1Holder
+	brsh	CheckP1WinMsec1
+	cp		msecDigit1, p1Msec1Holder
+	brlo	AddPointsToP2Msec1	;;
+	ret
+CheckP1WinMsec1:
+	cp		msecDigit1, p1Msec1Holder
+	breq	CalcP1WinMsec2
+	cp		msecDigit1, p1Msec1Holder
+	brne	AddPointsToP1Msec1	;;
+	ret
+AddPointsToP2Msec2:
+	ldi		temp, $10
+	add		scoreTrack, temp
+	rjmp	ShowP1Points
+AddPointsToP1Msec2:
+	ldi		temp, $01
+	add		scoreTrack, temp
+	rjmp	ShowP1Points 
+CalcP1WinMsec2:			;msecDigit2
+	cp		msecDigit2, p1Msec2Holder
+	brsh	CheckP1WinMsec2
+	cp		msecDigit2, p1Msec2Holder
+	brlo	AddPointsToP2Msec2	;;
+	ret
+CheckP1WinMsec2:
+	cp		msecDigit2, p1Msec2Holder
+	breq	CalcP1WinMsec3
+	cp		msecDigit2, p1Msec2Holder
+	brne	AddPointsToP1Msec2
+	ret
+CalcP1WinMsec3:			;msecDigit3
+	cp		msecDigit3, p1Msec3Holder
+	brsh	CheckP1WinMsec3
+	cp		msecDigit3, p1Msec3Holder
+	brlo	AddPointsToP2Msec3	;;
+	ret
+CheckP1WinMsec3:
+	cp		msecDigit3, p1Msec3Holder
+	breq	TieRoundNoPoints
+	cp		msecDigit3, p1Msec3Holder
+	brne	AddPointsToP1Msec3
+	ret
+AddPointsToP2Msec3:
+	ldi		temp, $10
+	add		scoreTrack, temp
+	rjmp	ShowP1Points
+AddPointsToP1Msec3:
+	ldi		temp, $01
+	add		scoreTrack, temp
+	rjmp	ShowP1Points 
+TieRoundNoPoints:
+	rjmp	ShowP1Points
+			
 CheckForTurn:
-	cpi     temp4, $AA      ;to check if showing timer result phase is started
-    breq    ShowResultTime
+	ldi		temp, $AA
+	cpse    temp4, temp
+	ret						     ;to check if showing reflex result phase is started
+	rcall	ShowResultTime
 	ret
 
 ShowResultTime:
 	cli
     inc     displayCountLow
-    sbrs    displayCountLow, 7
+    sbrs    displayCountLow, 4
     ret
+	rcall	IncreaseHighNibble
+	ret
+
 IncreaseHighNibble:
+	clr		displayCountLow
     inc     displayCountHigh
-    sbrc    displayCountHigh, 7
-    rjmp    CheckTurn
     ret
 
 SevSegDrive:
@@ -515,18 +684,12 @@ DisplaySec:
     ret
 
 
-StopTimer:      ;stop timer and start the timer result display phase
-    ;;;;;
-	
-    ldi     temp4, $AA
-    ret
-
 StopTimerInt:
     push    temp
     in      temp,SREG
     push    temp
 
-    rcall StopTimer 
+	ldi     temp4, $AA
 
     pop     temp
     out     SREG, temp
@@ -539,7 +702,9 @@ MsecT0Int:
     in      temp,SREG
     push    temp
 
-    rcall TimerDrive   
+	ldi		temp, $AA
+	cpse	temp4, temp
+    rcall	TimerDrive   
 
     pop     temp
     out     SREG, temp
@@ -570,6 +735,9 @@ OverMsec1:
     subi    msecDigit1, $0A
     inc     secDigit
     cpi     secDigit, $09
-    brsh    StopTimer
+    brsh    LimitSecNine
     ret
+LimitSecNine:
+	ldi		secDigit, $09
+	ret
 
