@@ -372,7 +372,7 @@ InitInterrupts:
 MainLoop:
     rcall   SevSegDrive
 	rcall	CheckForTurn
-	sbrc	displayCountHigh, 3
+	sbrc	displayCountHigh, 4
 	rcall	CheckTurn
     
     rjmp    MainLoop
@@ -662,25 +662,77 @@ DisplayMsec1:
     ret
 DisplaySec:
     cpi     secDigit, $09
-    breq    showNine
+    breq    showNineSec
     cpi     secDigit, $08
-    breq    showEight
+    breq    showEightSec
     cpi     secDigit, $07
-    breq    showSeven
+    breq    showSevenSec
     cpi     secDigit, $06
-    breq    showSix
+    breq    showSixSec
     cpi     secDigit, $05
-    breq    showFive 
+    breq    showFiveSec
     cpi     secDigit, $04
-    breq    showFour 
+    breq    showFourSec 
     cpi     secDigit, $03
-    breq    showThree
+    breq    showThreeSec
     cpi     secDigit, $02
-    breq    showTwo
+    breq    showTwoSec
     cpi     secDigit, $01
-    breq    showOne
+    breq    showOneSec
     cpi     secDigit, $00
-    breq    showZero
+    breq    showZeroSec
+    ret
+
+showNineSec:
+
+    ldi     temp, num9
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showEightSec:
+    ldi     temp, num8
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showSevenSec:
+    ldi     temp, num7
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showSixSec:
+    ldi     temp, num6
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showFiveSec:
+    ldi     temp, num5
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showFourSec:
+    ldi     temp, num4
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showThreeSec:
+    ldi     temp, num3
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showTwoSec:
+    ldi     temp, num2
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showOneSec:
+    ldi     temp, num1
+	ori		temp, $80
+    out     PORTC, temp
+    ret
+showZeroSec:
+    ldi     temp, num0
+	ori		temp, $80
+    out     PORTC, temp
     ret
 
 
