@@ -17,11 +17,13 @@
 .equ    num0= 0x3F
 
 .equ    letterF = 0x71
-.equ    letterP = 0x73
+
 .equ    letterT = 0x78
 .equ    letterU = 0x1C
 .equ    letterR = 0x50
 .equ    letterN = 0x54
+
+.equ    letterP = 0x73
 .equ	letterL = 0x38
 .equ	letterA = 0x77
 .equ	letterY = 0x6E
@@ -30,7 +32,6 @@
 .equ    LightSequance2 = 0x3C
 .equ    LightSequance3 = 0x7E
 .equ    LightSequance4 = 0xFF
-
 
 ;REGISTERS
 .def    temp = R16
