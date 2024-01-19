@@ -22,6 +22,10 @@
 .equ    letterU = 0x1C
 .equ    letterR = 0x50
 .equ    letterN = 0x54
+.equ	letterL = 0x38
+.equ	letterA = 0x77
+.equ	letterY = 0x6E
+
 .equ    LightSequance1 = 0x18 ;For the Red Lights in PORTD
 .equ    LightSequance2 = 0x3C
 .equ    LightSequance3 = 0x7E
@@ -84,7 +88,38 @@ clr     temp
 
 ;Main Subroutines between actual timing.
 
-StartScreen:
+StartScreen1:
+    inc     temp
+    ldi     temp2, (1<<3)
+    out     PORTA, temp2
+    ldi     temp2, letterP
+    out     PORTC, temp2
+    rcall   Delay
+	rcall   Delay
+    ldi     temp2, (1<<2)
+    out     PORTA, temp2
+    ldi     temp2, letterL
+    out     PORTC, temp2
+    rcall   Delay
+	rcall   Delay
+	ldi     temp2, (1<<1)
+    out     PORTA, temp2
+    ldi     temp2, letterA
+    out     PORTC, temp2
+    rcall   Delay
+	rcall   Delay
+	ldi     temp2, (1<<0)
+    out     PORTA, temp2
+    ldi     temp2, letterY
+    out     PORTC, temp2
+    rcall   Delay
+	rcall   Delay
+    cpse    temp, secDigit
+    rjmp    StartScreen1
+    clr     temp  
+	clr		secDigit
+
+StartScreen2:
     inc     temp
     ldi     temp2, (1<<2)
     out     PORTA, temp2
@@ -99,7 +134,7 @@ StartScreen:
     rcall   Delay
 	rcall   Delay
     cpse    temp, secDigit
-    rjmp    StartScreen
+    rjmp    StartScreen2
     clr     temp  
 	clr		secDigit
 	rjmp	ShowP1Points
@@ -333,21 +368,21 @@ RedLightDrive:
     rcall   Long_Delay
     ldi     temp, LightSequance4
     out     PORTD, temp
-    rcall   Long_Delay5
-	rcall	Long_Delay
-    ldi     temp, $00
-    out     PORTD, temp
+    rcall   DiffDelay
 	rcall	InitInterrupts
+	sei
+	ldi     temp, $00
+    out     PORTD, temp
 	clr		secDigit
 	clr		msecDigit1
 	clr		msecDigit2
 	clr		msecDigit3
 	clr		temp
-	sei
+	clr		temp4
+	
 	rjmp	MainLoop
 
 InitInterrupts:
-	
 	; INITIALIZE Timer0 CTC interrupt
 	ldi temp, (1<<WGM01)|(1<<CS01)|(1<<CS00)		; prescale 64 and CTC mode
 	out TCCR0, temp
@@ -363,22 +398,20 @@ InitInterrupts:
 	out MCUCSR, temp ; Rising edge act.
 	ret
 	
-	
-
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;   MAIN PART   ;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;       MAIN PART      ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 MainLoop:
+
     rcall   SevSegDrive
 	rcall	CheckForTurn
-	sbrc	displayCountHigh, 4
+	sbrc	displayCountHigh, 5		;check for result display time over
 	rcall	CheckTurn
     
     rjmp    MainLoop
 
-
-;; Delay subroutine
+;; Delay subroutines
 Delay:	ldi     temp2, $00
 	    ldi     temp3, $02
 Wait:	subi    temp2, 1
@@ -387,18 +420,36 @@ Wait:	subi    temp2, 1
 	    ret
 
 Long_Delay:	ldi     temp2, $00
-	        ldi     temp3, $DD
+	        ldi     temp3, $AA
 WaitL:	    subi    temp2, 1
 	        sbci    temp3, 0
 	        brcc    WaitL
 	        ret
-Long_Delay5:
-    rcall   Long_Delay
-    rcall   Long_Delay
-    rcall   Long_Delay
-    rcall   Long_Delay
-    rcall   Long_Delay
+DiffDelay:
+	cpi		turnTrack, $01
+	breq	P2Delay
+	cpi		turnTrack, $0F
+	breq	P1Delay
     ret
+
+P2Delay:
+	ldi		temp, $00
+	rcall	Long_Delay
+	rcall	Long_Delay
+	cpse	msecDigit2, temp
+	dec		msecDigit2
+	cpse	msecDigit2, temp
+	rjmp	P2Delay
+	ret
+P1Delay:
+	rcall	Long_Delay
+	rcall	Long_Delay
+	ldi		temp, $00
+	cpse	p1Msec2Holder, temp
+	dec		p1Msec2Holder
+	cpse	p1Msec2Holder, temp
+	rjmp	P1Delay
+	ret
 
 CheckTurn:
     clr     temp4
@@ -684,7 +735,6 @@ DisplaySec:
     ret
 
 showNineSec:
-
     ldi     temp, num9
 	ori		temp, $80
     out     PORTC, temp
@@ -735,7 +785,6 @@ showZeroSec:
     out     PORTC, temp
     ret
 
-
 StopTimerInt:
     push    temp
     in      temp,SREG
@@ -747,7 +796,6 @@ StopTimerInt:
     out     SREG, temp
     pop     temp
     reti
-
 
 MsecT0Int:
     push    temp
