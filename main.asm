@@ -385,18 +385,18 @@ RedLightDrive:
 
 InitInterrupts:
 	; INITIALIZE Timer0 CTC interrupt
-	ldi temp, (1<<WGM01)|(1<<CS01)|(1<<CS00)		; prescale 64 and CTC mode
-	out TCCR0, temp
-	ldi temp, $0E		; to get 0.001 sec timer0 interrupt
-	out OCR0, temp
-	ldi temp, 1<<OCIE0
-	out TIMSK, temp
+	ldi     temp, (1<<WGM01)|(1<<CS01)|(1<<CS00)		; prescale 64 and CTC mode
+	out     TCCR0, temp
+	ldi     temp, $0E		; to get 0.001 sec timer0 interrupt
+	out     OCR0, temp
+	ldi     temp, 1<<OCIE0
+	out     TIMSK, temp
 
-	ldi temp, 1<<INT2
-	out GICR, temp ; INT2 activation
+	ldi     temp, 1<<INT2
+	out     GICR, temp ; INT2 activation
 	; INITIALIZE MCUCSR
-	ldi temp, 1<<ISC2
-	out MCUCSR, temp ; Rising edge act.
+	ldi     temp, 1<<ISC2
+	out     MCUCSR, temp ; Rising edge act.
 	ret
 	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -588,20 +588,20 @@ SevSegDrive:
     ret
 
 DriveMsec3:
-    rcall  DisplayMsec3
-    rcall  Delay
+    rcall   DisplayMsec3
+    rcall   Delay
     ret
 DriveMsec2:
-    rcall  DisplayMsec2
-    rcall  Delay
+    rcall   DisplayMsec2
+    rcall   Delay
     ret
 DriveMsec1:
-    rcall  DisplayMsec1
-    rcall  Delay	
+    rcall   DisplayMsec1
+    rcall   Delay	
     ret
 DriveSec:
-    rcall  DisplaySec
-    rcall  Delay
+    rcall   DisplaySec
+    rcall   Delay
     ret
 
 DisplayMsec3:
